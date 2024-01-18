@@ -1,12 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:serasa_bloc/controllers/loading.controller.dart';
 import 'package:serasa_bloc/widgets/balance.widget.dart';
 import 'package:serasa_bloc/widgets/financial_situation.widget.dart';
 import 'package:serasa_bloc/widgets/header_home.widget.dart';
 import 'package:serasa_bloc/widgets/list_action_button_home.widget.dart';
 
 void main() {
+  Bloc.observer = const AppBlocObserver();
   runApp(const MyApp());
+}
+
+class AppBlocObserver extends BlocObserver {
+  /// {@macro app_bloc_observer}
+  const AppBlocObserver();
+
+  @override
+  void onChange(BlocBase<dynamic> bloc, Change<dynamic> change) {
+    super.onChange(bloc, change);
+    if (bloc is Cubit) print(change);
+  }
+
+  @override
+  void onTransition(
+    Bloc<dynamic, dynamic> bloc,
+    Transition<dynamic, dynamic> transition,
+  ) {
+    super.onTransition(bloc, transition);
+    print(transition);
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -84,13 +107,8 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   late TabController controller;
-  int _counter = 0;
 
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
+  late LoadingHomeBloc _loadingHomeBloc;
 
   @override
   void initState() {
@@ -99,112 +117,136 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       vsync: this,
       initialIndex: 0,
     );
+    _loadingHomeBloc = LoadingHomeBloc();
+    initPage();
     super.initState();
+  }
+
+  Future<void> initPage() async {
+    await Future.delayed(const Duration(seconds: 3));
+    _loadingHomeBloc.add(LoadingFinish());
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // appBar: AppBar(
-      //   // TRY THIS: Try changing the color here to a specific color (to
-      //   // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-      //   // change color while the other colors stay the same.
-      //   backgroundColor: Theme.of(context).colorScheme.primary,
-      //   // title: Text(widget.title),
-      // ),
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(10.0), // here the desired height
-        child: AppBar(
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          systemOverlayStyle: SystemUiOverlayStyle(
-            statusBarColor: Theme.of(context).colorScheme.primary,
-          ),
-        ),
-      ),
-      backgroundColor: Theme.of(context).colorScheme.background,
-      body: const SingleChildScrollView(
-        // padding: EdgeInsets.only(
-        //   top: AppBar().preferredSize.height,
+    return BlocProvider(
+      create: (context) => _loadingHomeBloc,
+      child: Scaffold(
+        // appBar: AppBar(
+        //   // TRY THIS: Try changing the color here to a specific color (to
+        //   // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
+        //   // change color while the other colors stay the same.
+        //   backgroundColor: Theme.of(context).colorScheme.primary,
+        //   // title: Text(widget.title),
         // ),
-        child: Column(
-          children: <Widget>[
-            // Pseudo header
-            HeaderHome(),
-            Balance(),
-            ListActionsHome(),
-            FinancialSituation(),
-          ],
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.symmetric(
-          vertical: 16,
-        ),
-        child: TabBar(
-          indicator: const UnderlineTabIndicator(
-            borderSide: BorderSide(color: Color(0xFF0B65E0), width: 4.0),
-            insets: EdgeInsets.fromLTRB(50.0, 0.0, 50.0, 40.0),
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(10.0), // here the desired height
+          child: AppBar(
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            systemOverlayStyle: SystemUiOverlayStyle(
+              statusBarColor: Theme.of(context).colorScheme.primary,
+            ),
           ),
-          indicatorPadding: EdgeInsets.only(bottom: 16),
-          controller: controller,
-          tabs: [
-            Tab(
-              child: Container(
-                height: 100,
-                child: const Center(
-                  child: Icon(Icons.home),
+        ),
+        backgroundColor: Theme.of(context).colorScheme.background,
+        body: BlocBuilder<LoadingHomeBloc, bool>(
+          builder: (BuildContext context, bool state) {
+            if (state) {
+              return SizedBox(
+                height: MediaQuery.of(context).size.height,
+                width: MediaQuery.of(context).size.width,
+                child: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
+            return const SingleChildScrollView(
+              // padding: EdgeInsets.only(
+              //   top: AppBar().preferredSize.height,
+              // ),
+              child: Column(
+                children: <Widget>[
+                  // Pseudo header
+                  HeaderHome(),
+                  Balance(),
+                  ListActionsHome(),
+                  FinancialSituation(),
+                ],
+              ),
+            );
+          },
+        ),
+
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        bottomNavigationBar: Container(
+          padding: const EdgeInsets.symmetric(
+            vertical: 16,
+          ),
+          child: TabBar(
+            indicator: const UnderlineTabIndicator(
+              borderSide: BorderSide(color: Color(0xFF0B65E0), width: 4.0),
+              insets: EdgeInsets.fromLTRB(50.0, 0.0, 50.0, 40.0),
+            ),
+            indicatorPadding: EdgeInsets.only(bottom: 16),
+            controller: controller,
+            tabs: [
+              Tab(
+                child: Container(
+                  height: 100,
+                  child: const Center(
+                    child: Icon(Icons.home),
+                  ),
                 ),
               ),
-            ),
-            Tab(
-              child: Container(
-                height: 100,
-                // width: MediaQuery.of(context).size.width,
-                child: const Center(
-                  child: Text("Home"),
+              Tab(
+                child: Container(
+                  height: 100,
+                  // width: MediaQuery.of(context).size.width,
+                  child: const Center(
+                    child: Text("Home"),
+                  ),
                 ),
               ),
-            ),
-            Tab(
-              child: Container(
-                height: 100,
-                // width: MediaQuery.of(context).size.width,
-                child: const Center(
-                  child: Text(""),
+              Tab(
+                child: Container(
+                  height: 100,
+                  // width: MediaQuery.of(context).size.width,
+                  child: const Center(
+                    child: Text(""),
+                  ),
                 ),
               ),
-            ),
-            Tab(
-              child: Container(
-                height: 100,
-                // width: MediaQuery.of(context).size.width,
-                child: const Center(
-                  child: Text("Home"),
+              Tab(
+                child: Container(
+                  height: 100,
+                  // width: MediaQuery.of(context).size.width,
+                  child: const Center(
+                    child: Text("Home"),
+                  ),
                 ),
               ),
-            ),
-            Tab(
-              child: Container(
-                height: 100,
-                // width: MediaQuery.of(context).size.width,
-                child: const Center(
-                  child: Text("Home"),
+              Tab(
+                child: Container(
+                  height: 100,
+                  // width: MediaQuery.of(context).size.width,
+                  child: const Center(
+                    child: Text("Home"),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {},
+          backgroundColor: const Color(0xFF0B65E0),
+          tooltip: 'Increment',
+          child: const Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [Icon(Icons.attach_money), Text("Pagar")],
+          ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        backgroundColor: const Color(0xFF0B65E0),
-        tooltip: 'Increment',
-        child: const Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [Icon(Icons.attach_money), Text("Pagar")],
-        ),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
