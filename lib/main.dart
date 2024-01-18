@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
+import 'package:get/instance_manager.dart';
+import 'package:serasa_bloc/controllers/home.controller.dart';
 import 'package:serasa_bloc/widgets/balance.widget.dart';
 import 'package:serasa_bloc/widgets/financial_situation.widget.dart';
 import 'package:serasa_bloc/widgets/header_home.widget.dart';
 import 'package:serasa_bloc/widgets/list_action_button_home.widget.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  MyApp({super.key});
 
-  // This widget is the root of your application.
+  final HomeControllerX homeControllerX =
+      Get.put<HomeControllerX>(HomeControllerX());
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -84,14 +89,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   late TabController controller;
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
-
+  final HomeControllerX _homeControllerX = Get.find<HomeControllerX>();
   @override
   void initState() {
     controller = TabController(
@@ -99,7 +97,13 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       vsync: this,
       initialIndex: 0,
     );
+    initPage();
     super.initState();
+  }
+
+  Future<void> initPage() async {
+    await Future.delayed(const Duration(seconds: 3));
+    _homeControllerX.updateLoading = false;
   }
 
   @override
@@ -122,19 +126,29 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
         ),
       ),
       backgroundColor: Theme.of(context).colorScheme.background,
-      body: const SingleChildScrollView(
-        // padding: EdgeInsets.only(
-        //   top: AppBar().preferredSize.height,
-        // ),
-        child: Column(
-          children: <Widget>[
-            // Pseudo header
-            HeaderHome(),
-            Balance(),
-            ListActionsHome(),
-            FinancialSituation(),
-          ],
-        ),
+      body: Obx(
+        () => _homeControllerX.loading.value
+            ? SizedBox(
+                height: MediaQuery.of(context).size.height,
+                width: MediaQuery.of(context).size.width,
+                child: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            : SingleChildScrollView(
+                // padding: EdgeInsets.only(
+                //   top: AppBar().preferredSize.height,
+                // ),
+                child: Column(
+                  children: <Widget>[
+                    // Pseudo header
+                    HeaderHome(),
+                    Balance(),
+                    ListActionsHome(),
+                    FinancialSituation(),
+                  ],
+                ),
+              ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: Container(
@@ -197,7 +211,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
+        onPressed: () {},
         backgroundColor: const Color(0xFF0B65E0),
         tooltip: 'Increment',
         child: const Column(
